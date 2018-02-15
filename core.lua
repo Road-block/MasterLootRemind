@@ -472,7 +472,6 @@ function MasterLootRemind:OnCombatEvent(event, info)
 end
 
 function MasterLootRemind:Roster()
-	self:Print(event)
 	local numRaidMembers, numPartyMembers = GetNumRaidMembers(), GetNumPartyMembers()
 	for name in pairs(self._roster) do
 		-- this will grow to the players we've grouped with in the session but preferable to creating fresh tables
