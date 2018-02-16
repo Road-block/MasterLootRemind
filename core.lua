@@ -315,6 +315,7 @@ end
 function MasterLootRemind:SetBossCombatStatusOption(newStatus)
 	self.db.profile.BossCombat = newStatus
 	self:ToggleCombatEvents(self.db.profile.BossCombat)
+	self:PLAYER_TARGET_CHANGED()
 end
 
 function MasterLootRemind:GetResetLootStatusOption()
@@ -404,10 +405,13 @@ end
 
 function MasterLootRemind:ToggleLootStatusEvents(enable)
 	if (enable) then
-		self:RegisterEvent("LOOT_CLOSED")
+		self:RegisterEvent("LOOT_OPENED")
 	else
 		if self:IsEventRegistered("LOOT_CLOSED") then
 			self:UnregisterEvent("LOOT_CLOSED")
+		end
+		if self:IsEventRegistered("LOOT_OPENED") then
+			self:UnregisterEvent("LOOT_OPENED")
 		end
 	end
 end
@@ -460,7 +464,7 @@ function MasterLootRemind:OnCombatEvent(event, info)
 	if (lootmethod == "master") then return end
 	local optType = self.db.profile.GroupType
 	local getType = MasterLootRemind:GetGroupType()
-	if (getType == 0) or (optType ~= 3 or getType ~= optType) then return end
+	if (getType == 0) or (optType ~= 3 and getType ~= optType) then return end
 	-- check for boss combat
 	local source, victim = info.source, info.victim
 	if source and (source ~= ParserLib_SELF and not self._roster[source]) then
@@ -504,7 +508,7 @@ function MasterLootRemind:Roster()
 	end
 end
 
-function MasterLootRemind:LOOT_CLOSED()
+function MasterLootRemind:LOOT_OPENED()
 	-- shortcircuit trivial cases
 	if not (self.db.profile.Active) then return end
 	if not (self.db.profile.ResetLoot) then return end
@@ -514,15 +518,20 @@ function MasterLootRemind:LOOT_CLOSED()
 	if (lootmethod ~= "master") then return end
 	local optType = self.db.profile.GroupType
 	local getType = MasterLootRemind:GetGroupType()
-	if (getType == 0) or (optType ~= 3 or getType ~= optType) then return end
+	if (getType == 0) or (optType ~= 3 and getType ~= optType) then return end
 	-- check conditions
 	local targetName = UnitExists("target") and UnitName("target") or nil
 	if not (targetName) then return end
 	if (not MasterLootRemind._bossName) or (MasterLootRemind._bossName == "_NONE_") then return end
-	local lootDesc = lootMethodDesc[MasterLootRemind._lastLootMethod]
 	if (string.lower(targetName) == string.lower(MasterLootRemind._bossName)) then
-		StaticPopup_Show("MASTERLOOTREMIND_RESET_POPUP",lootDesc)
+		self:RegisterEvent("LOOT_CLOSED")
 	end
+end
+
+function MasterLootRemind:LOOT_CLOSED()
+	local lootDesc = lootMethodDesc[MasterLootRemind._lastLootMethod]
+	self:UnregisterEvent("LOOT_CLOSED")
+	StaticPopup_Show("MASTERLOOTREMIND_RESET_POPUP",lootDesc)
 end
 
 function MasterLootRemind:GetGroupType()
@@ -565,6 +574,9 @@ function MasterLootRemind:inTable(tableName, searchString)
 end
 
 function MasterLootRemind:TestMLPopup(name,method,unit)
+	if MasterLootRemind._setPopupClose and (GetTime() - MasterLootRemind._setPopupClose) < 1 then
+		return
+	end
 	if (name) 
 		and (BB:HasTranslation(name) 
 			and (MasterLootRemind._whitelist[name] or (unit == nil or UnitIsEnemy("player", unit))) 
@@ -588,12 +600,14 @@ StaticPopupDialogs["MASTERLOOTREMIND_SET_POPUP"] = {
 		MasterLootRemind._visible = true
 	end,
 	OnAccept = function(name,method)
+		MasterLootRemind._setPopupClose = GetTime()
 		MasterLootRemind._bossName = name
 		MasterLootRemind._lastLootMethod = method
 		SetLootMethod("master", UnitName("player"))
 		MasterLootRemind._visible = false
 	end,
 	OnCancel = function()
+		MasterLootRemind._setPopupClose = GetTime()
 		MasterLootRemind:Ignore(MasterLootRemind._bossName)
 		MasterLootRemind._bossName = "_NONE_"
 		MasterLootRemind._visible = false
