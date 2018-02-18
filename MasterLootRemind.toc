@@ -2,7 +2,7 @@
 ## Author: Roadblock
 ## X-Website: https://github.com/Road-block/MasterLootRemind/releases/latest
 ## X-Category: Raid
-## Version: 1.1
+## Version: 1.2
 ## Title: Master Loot Remind
 ## Notes: Reminds Raid Leader to set "Master Loot" when a boss is engaged.
 ## OptionalDeps: Ace2, ParserLib, FuBar, FuBarPlugin-2.0, Deformat, TabletLib, DewdropLib, Babble-Boss-2.2

@@ -332,7 +332,7 @@ function MasterLootRemind:IgnoreTarget()
 		MasterLootRemind:Print(L["No target found."])
 		return
 	end
-	if not BB:HasTranslation(targetName) then
+	if not self:IsBossName(targetName) then
 		MasterLootRemind:Print(targetName .. L[" is not a known boss."])
 		return
 	end
@@ -401,6 +401,10 @@ function MasterLootRemind:DelFromIgnore(name, typeoflist)
 	else
 		self:Print(name .. L[" not found in "] .. typeoflist .. L[" ignore list!"])
 	end
+end
+
+function MasterLootRemind:IsBossName(name)
+	return BB:HasReverseTranslation(name) and BB:HasTranslation(BB:GetReverseTranslation(name))
 end
 
 function MasterLootRemind:ToggleLootStatusEvents(enable)
@@ -484,25 +488,25 @@ function MasterLootRemind:Roster()
 	if numRaidMembers > 0 then
 		for i=1,numRaidMembers do
 			local player,pet = UnitName(raidUnit[i][1]),UnitName(raidUnit[i][2])
-			if (player) and not BB:HasTranslation(player) then -- someone has named themselves as a boss
+			if (player) and not self:IsBossName(player) then -- someone has named themselves as a boss
 				self._roster[player] = true
 			end
-			if (pet) and not (BB:HasTranslation(pet)) then
+			if (pet) and not (self:IsBossName(pet)) then
 				self._roster[pet] = true
 			end
 		end
 	elseif numPartyMembers > 0 then
 		for i=1,numPartyMembers do
 			local player,pet = UnitName(partyUnit[i][1]),UnitName(partyUnit[i][2])
-			if (player) and not BB:HasTranslation(player) then
+			if (player) and not self:IsBossName(player) then
 				self._roster[player] = true
 			end
-			if (pet) and not BB:HasTranslation(pet) then
+			if (pet) and not self:IsBossName(pet) then
 				self._roster[pet] = true
 			end
 		end
 		pet = UnitName("pet")
-		if (pet) and not BB:HasTranslation(pet) then
+		if (pet) and not self:IsBossName(pet) then
 			self._roster[pet] = true
 		end
 	end
@@ -578,7 +582,7 @@ function MasterLootRemind:TestMLPopup(name,method,unit)
 		return
 	end
 	if (name) 
-		and (BB:HasTranslation(name) 
+		and (self:IsBossName(name) 
 			and (MasterLootRemind._whitelist[name] or (unit == nil or UnitIsEnemy("player", unit))) 
 			and (not MasterLootRemind._blacklist[name])) then
 		if MasterLootRemind:isIgnored(name) == false then
